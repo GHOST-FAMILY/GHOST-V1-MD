@@ -28,14 +28,14 @@ let desc = `*◆ GHOST-MD SONG DOWNLOADING.....◆*
 
 |➤ AGO - ${data.ago}
 
- ©*ᴘᴏᴡᴇʀᴅ ʙʏ ɢʜᴏꜱᴛ-ᴍᴅ*
+ ©*BY BLAST-MD*
 `
 await conn.sendMessage(from,{image:{url: data.thumbnail},caption:desc},{quoted:mek});
 
 //download audio
 
   footer: tlang().footer,
-                headerType: 4
+                headerType: 4,
             };
             return Void.sendMessage(citel.chat, buttonMessage, {
                 quoted: citel,
