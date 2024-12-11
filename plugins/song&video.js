@@ -1,132 +1,141 @@
-const {cmd , commands} = require('../command')
-const fg = require('api-dylux')
-const yts = require('yt-search')
+const { cmd, commands } = require('../command');
+const fg = require('api-dylux');
+const yts = require('yt-search');
+const config = require('../config');
 
+// ============ SONG DOWNLOAD COMMAND ============
 cmd({
     pattern: "song",
-    desc: "download songs",
+    react: "🎶",
+    desc: "Download songs",
     category: "download",
-    react: "💿",
-    filename: __filename
-},
-async(conn, mek, m,{from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply}) => {
-try{
-if(!q) return reply("*WAIT PLEASE...*")
-const search = await yts(q)
-const data = search.videos[0]
-const url = data.url
+    filename: __filename,
+}, 
+async (conn, mek, m, {
+    from, quoted, body, isCmd, command, args, q, reply
+}) => {
+    try {
+        if (!q) return reply("Please provide a URL or title to download the song.");
 
-let desc = `*◆ GHOST-MD SONG DOWNLOADING.....◆*
+        const search = await yts(q);
+        const data = search.videos[0];
+        if (!data) return reply("No results found for your query. Please try again.");
 
-| ➤ TITLE - ${data.title}
+        const url = data.url;
 
-| ➤ VIEWS - ${data.views}
+        let desc = `
+🎶 GHOST-MD SONG DOWNLODING..... 🎶
 
-| ➤ DESCRIPTION - ${data.description}
+| ➤ Title: ${data.title}
+| ➤ Duration: ${data.timestamp}
+| ➤ Uploaded: ${data.ago}
+| ➤ Views: ${data.views}
+| ➤ Author: ${data.author.name}
+| ➤ URL: ${data.url}
 
-| ➤ TIME - ${data.timestamp}
+🔢 Reply Below Number:
 
-|➤ AGO - ${data.ago}
+1 || Audio Type
+2 || Document Type
 
- ©*BY BLAST-MD*
-`
-await conn.sendMessage(from,{image:{url: data.thumbnail},caption:desc},{quoted:mek});
+©ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɢʜᴏꜱᴛ-ᴍᴅ
+`;
+        const vv = await conn.sendMessage(from, { image: { url: data.thumbnail }, caption: desc }, { quoted: mek });
 
-//download audio
+        conn.ev.on('messages.upsert', async (msgUpdate) => {
+            const msg = msgUpdate.messages[0];
+            if (!msg.message || !msg.message.extendedTextMessage) return;
 
-  footer: tlang().footer,
-                headerType: 4,
-            };
-            return Void.sendMessage(citel.chat, buttonMessage, {
-                quoted: citel,
-	    }
-         let urlYt = text;
-            if(!text){ text=citel.quoted.text; }
+            const selectedOption = msg.message.extendedTextMessage.text.trim();
 
-            if (!urlYt.startsWith("http")) 
-            {
-                let yts = require("secktor-pack");
-                let search = await yts(text);
-                let anu = search.videos[0];
-                urlYt = anu.url; 
+            if (msg.message.extendedTextMessage.contextInfo && msg.message.extendedTextMessage.contextInfo.stanzaId === vv.key.id) {
+                switch (selectedOption) {
+                    case '1':
+                        let down = await fg.yta(url);
+                        let downloadUrl = down.dl_url;
+                        await conn.sendMessage(from, { audio: { url: downloadUrl }, caption: 'Audio sent successfully ✅\n\n©ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴍʀ ꜱᴇɴᴇꜱʜ ', mimetype: 'audio/mpeg' }, { quoted: mek });
+                        break;
+                    case '2':
+                        let downdoc = await fg.yta(url);
+                        let downloaddocUrl = downdoc.dl_url;
+                        await conn.sendMessage(from, { document: { url: downloaddocUrl }, caption: 'Document sent successfully ✅\n\n©ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴍʀ ꜱᴇɴᴇꜱʜ ', mimetype: 'audio/mpeg', fileName: data.title + ".mp3" }, { quoted: mek });
+                        break;
+                    default:
+                        reply("Invalid option. Please select a valid option 🔴");
+                }
             }
-            let infoYt = await ytdl.getInfo(urlYt);
-            if (infoYt.videoDetails.lengthSeconds >= 1200) return citel.reply(`*song not Found, Try Differ Name*`);
-            let titleYt = infoYt.videoDetails.title;   
-	    citel.reply(`_Downloading ${infoYt.videoDetails.title}?_`);
-            let randomName = getRandom(".mp3");
-            const stream = ytdl(urlYt, {
-                 filter: (info) => info.audioBitrate == 160 || info.audioBitrate == 128, })
-                 .pipe(fs.createWriteStream(`./${randomName}`));
-                
-	   await new Promise((resolve, reject) => { stream.on("error", reject);  stream.on("finish", resolve);  });
-            
-            let stats = fs.statSync(`./${randomName}`);
-            let fileSizeInBytes = stats.size;
-            let fileSizeInMegabytes = fileSizeInBytes / (1024 * 1024);
-            if (fileSizeInMegabytes <= dlsize) 
-            {
-                let yts = require("secktor-pack");
-                let search = await yts(text);
-                let buttonMessage = 
-				{
-				    audio: fs.readFileSync(`./${randomName}`),
-				    mimetype: 'audio/mpeg',
-				    fileName: titleYt + ".mp3",
-				    headerType: 4,
-				 }
-                 
-                await Void.sendMessage(citel.chat, buttonMessage, { quoted: citel })
-                return fs.unlinkSync(`./${randomName}`);
-            } 
-            else {   citel.reply(`❌ File size bigger than 100mb.`);    }
-             return fs.unlinkSync(`./${randomName}`);
-   
-   }catch (e) { return citel.reply(`Error While Downloading Your Song`);  }
-})
-    
-//===========video-dl===========
+        });
 
+    } catch (e) {
+        console.error(e);
+        await conn.sendMessage(from, { react: { text: '❌', key: mek.key } });
+        reply('An error occurred while processing your request.');
+    }
+});
+
+// ============ VIDEO DOWNLOAD COMMAND ============
 cmd({
-    pattern: "video",
-    desc: "download video",
-    category: "download",
-    react: "🎥",
+    pattern: 'video',
+    desc: 'Download videos',
+    react: "📽️",
+    category: 'download',
     filename: __filename
 },
-async(conn, mek, m,{from, quoted, body, isCmd, command, args, q, isGroup, sender, senderNumber, botNumber2, botNumber, pushname, isMe, isOwner, groupMetadata, groupName, participants, groupAdmins, isBotAdmins, isAdmins, reply}) => {
-try{
-if(!q) return reply("*WAIT PLEASE...*")
-const search = await yts(q)
-const data = search.videos[0]
-const url = data.url
+async (conn, mek, m, { from, quoted, body, isCmd, command, args, q, reply }) => {
+    try {
+        if (!q) return reply('Please enter a query or a URL!');
 
-let des = `*◆ GHOST-MD VIDEO DOWNLOADING.....◆*
+        const search = await yts(q);
+        const data = search.videos[0];
+        if (!data) return reply("No results found for your query. Please try again.");
 
-| ➤ TITLE - ${data.title}
+        const url = data.url;
 
-| ➤ VIEWS - ${data.views}
+        let desc = `📽️ GHOST-MD VIDEO DOWNLOADING..... 📽️
 
-| ➤ DESCRIPTION - ${data.description}
+| ➤ Title: ${data.title}
+| ➤ Views: ${data.views}
+| ➤ Description: ${data.description}
+| ➤ Time: ${data.timestamp}
+| ➤ Ago: ${data.ago}
 
-| ➤ TIME - ${data.timestamp}
+🔢 Reply Below Number:
 
-| ➤ AGO - ${data.ago}
+1 || Video in Normal Format
+2 || Video in Document Format
 
-*ᴘᴏᴡᴇʀᴅ ʙʏ ɢʜᴏꜱᴛ-ᴍᴅ*
-`
-await conn.sendMessage(from,{image:{url: data.thumbnail},caption:des},{quoted:mek});
+©ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɢʜᴏꜱᴛ-ᴍᴅ 
+`;
 
-//download video
+        const vv = await conn.sendMessage(from, { image: { url: data.thumbnail }, caption: desc }, { quoted: mek });
 
-let down = await fg.ytv(url)  
-let downloadUrl = down.dl_url
+        conn.ev.on('messages.upsert', async (msgUpdate) => {
+            const msg = msgUpdate.messages[0];
+            if (!msg.message || !msg.message.extendedTextMessage) return;
 
-//send video
-await conn.sendMessage(from,{video:{url: downloadUrl},mimetype:"video/mp4"},{quoted:mek})
-await conn.sendMessage(from,{document:{url: downloadUrl},mimetype:"video/mp4",fileName:data.title + "mp4",caption:"©ᴘᴏᴡᴇʀᴇᴅ ʙʏ ɢʜᴏꜱᴛ-ᴍᴅ"},{quoted:mek})
-    
-}catch(a){
-reply(`${a}`)
-}
-})
+            const selectedOption = msg.message.extendedTextMessage.text.trim();
+
+            if (msg.message.extendedTextMessage.contextInfo && msg.message.extendedTextMessage.contextInfo.stanzaId === vv.key.id) {
+                switch (selectedOption) {
+                    case '1':
+                        let downvid = await fg.ytv(url);
+                        let downloadvUrl = downvid.dl_url;
+                        await conn.sendMessage(from, { video: { url: downloadvUrl }, caption: 'Video sent successfully ✅\n\n©ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴍʀ ꜱᴇɴᴇꜱʜ ', mimetype: 'video/mp4' }, { quoted: mek });
+                        break;
+                    case '2':
+                        let downviddoc = await fg.ytv(url);
+                        let downloadvdocUrl = downviddoc.dl_url;
+                        await conn.sendMessage(from, { document: { url: downloadvdocUrl }, caption: 'Document sent successfully ✅\n\n©ᴘᴏᴡᴇʀᴇᴅ ʙʏ ᴍʀ ꜱᴇɴᴇꜱʜ ', mimetype: 'video/mp4', fileName: data.title + ".mp4" }, { quoted: mek });
+                        break;
+                    default:
+                        reply("Invalid option. Please select a valid option 🔴");
+                }
+            }
+        });
+
+    } catch (e) {
+        console.error(e);
+        await conn.sendMessage(from, { react: { text: '❌', key: mek.key } });
+        reply('An error occurred while processing your request.');
+    }
+});
